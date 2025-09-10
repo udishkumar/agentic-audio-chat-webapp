@@ -8,7 +8,7 @@ A minimal WebRTC + OpenAI Realtime API demo.
 ## Quick start
 
 1. **Prereqs**: Node 18+.
-2. `cd server && cp .env.example .env` and set `OPENAI_API_KEY=`.
+2. `cd server && touch .env` and set `OPENAI_API_KEY=`.
 3. `npm install`
 4. `npm start`
 5. Open http://localhost:3000 (localhost is allowed for mic without HTTPS).
