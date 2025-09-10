@@ -1,0 +1,29 @@
+{
+  "name": "agentic-audio-chat-webapp",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node index.js",
+    "dev": "NODE_ENV=development node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  },
+  "description": "A minimal WebRTC + OpenAI Realtime API demo.",
+  "main": "index.js",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/udishkumar/agentic-audio-chat-webapp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/udishkumar/agentic-audio-chat-webapp/issues"
+  },
+  "homepage": "https://github.com/udishkumar/agentic-audio-chat-webapp#readme"
+}
