@@ -16,6 +16,9 @@ button {
   border-radius: 0.5rem;
   cursor: pointer;
 }
+button.secondary {
+  background: #f7f7f7;
+}
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -32,6 +35,8 @@ button:disabled {
   border: 1px solid #eee;
   padding: 0.75rem;
   border-radius: 0.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
 }
 .badge {
   font-size: 0.75rem;
@@ -51,3 +56,16 @@ button:disabled {
 .user {
   color: #444;
 }
+
+/* Transcript styles */
+#transcript {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #eee;
+  background: #fff;
+  border-radius: 0.5rem;
+  min-height: 64px;
+}
+#transcript .assistant::before { content: "Assistant: "; font-weight: 600; }
+#transcript .user::before { content: "You: "; font-weight: 600; }
+#transcript [data-live="1"] { opacity: 0.9; }

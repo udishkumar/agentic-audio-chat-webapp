@@ -14,9 +14,18 @@
     <button id="startBtn">Start</button>
     <button id="stopBtn" disabled>Stop</button>
     <span id="status" class="pill">idle</span>
+    <label style="margin-left: 0.5rem; display:flex; align-items:center; gap:0.35rem;">
+      <input id="debugChk" type="checkbox" checked>
+      Debug
+    </label>
+    <button id="clearLogBtn" class="secondary">Clear Log</button>
   </div>
 
   <audio id="remoteAudio" autoplay playsinline></audio>
+
+  <!-- Live Transcript -->
+  <h2 style="margin-top:1rem;">Live Transcript</h2>
+  <div id="transcript" aria-live="polite" aria-atomic="false"></div>
 
   <div id="log" aria-live="polite"></div>
 
