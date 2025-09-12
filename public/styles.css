@@ -50,6 +50,13 @@ button:disabled {
   border-radius: 999px;
   font-size: 0.8rem;
 }
+.pill-cat {
+  margin-left: 0.4rem;
+}
+.pill-provisional {
+  opacity: 0.7;
+  border: 1px dashed #bbb;
+}
 .assistant {
   color: #163;
 }
@@ -66,6 +73,21 @@ button:disabled {
   border-radius: 0.5rem;
   min-height: 64px;
 }
-#transcript .assistant::before { content: "Assistant: "; font-weight: 600; }
-#transcript .user::before { content: "You: "; font-weight: 600; }
-#transcript [data-live="1"] { opacity: 0.9; }
+.line {
+  padding: 0.5rem 0.25rem;
+  border-bottom: 1px dashed #f0f0f0;
+}
+.line:last-child {
+  border-bottom: none;
+}
+.line-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+.line-header .who {
+  font-weight: 600;
+}
+.line.live { opacity: 0.9; }
+.line-text { white-space: pre-wrap; }

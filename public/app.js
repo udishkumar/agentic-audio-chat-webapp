@@ -10,6 +10,10 @@ const clearLogBtn = document.getElementById('clearLogBtn');
 let pc, localStream, dataChannel;
 let transcriptBuffer = { user: '', assistant: '' };
 let transcriptTimeouts = { user: null, assistant: null };
+const classifyState = {
+  user: { last: 0, inFlight: false },
+  assistant: { last: 0, inFlight: false }
+};
 
 function log(line, cls='') {
   const p = document.createElement('div');
@@ -42,19 +46,83 @@ function clearTranscript() {
   }
 }
 
-function makeLine(role, text = '', live = false) {
-  const el = document.createElement('div');
-  el.className = role;
-  if (live) el.dataset.live = '1';
-  el.textContent = text;
-  return el;
+function createTranscriptLine(role, text = '', live = false) {
+  const wrapper = document.createElement('div');
+  wrapper.className = `line ${role}` + (live ? ' live' : '');
+
+  const header = document.createElement('div');
+  header.className = 'line-header';
+  const who = document.createElement('span');
+  who.className = 'who';
+  who.textContent = role === 'assistant' ? 'Assistant' : 'You';
+  const pills = document.createElement('span');
+  pills.className = 'pills';
+
+  header.appendChild(who);
+  header.appendChild(pills);
+
+  const body = document.createElement('div');
+  body.className = 'line-text';
+  body.textContent = text;
+
+  wrapper.appendChild(header);
+  wrapper.appendChild(body);
+
+  return wrapper;
+}
+
+function setPills(el, categories = [], { provisional = false } = {}) {
+  if (!el) return;
+  const pills = el.querySelector('.pills');
+  if (!pills) return;
+  pills.innerHTML = '';
+  for (const c of categories) {
+    const span = document.createElement('span');
+    span.className = 'pill pill-cat' + (provisional ? ' pill-provisional' : '');
+    span.textContent = c;
+    pills.appendChild(span);
+  }
+}
+
+async function classifyAndTag(el, role, { provisional = false } = {}) {
+  try {
+    const text = el?.querySelector('.line-text')?.textContent || '';
+    if (!text.trim()) return;
+    const resp = await fetch('/classify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, role })
+    });
+    if (!resp.ok) return;
+    const json = await resp.json();
+    setPills(el, Array.isArray(json.categories) ? json.categories : [], { provisional });
+  } catch (e) {
+    // silent fail
+  }
+}
+
+function classifyLive(role) {
+  const state = classifyState[role];
+  const now = Date.now();
+  const MIN_INTERVAL_MS = 1500;
+  if (state.inFlight || now - state.last < MIN_INTERVAL_MS) return;
+  const live = getOrCreateLiveLine(role);
+  if (!live) return;
+  const text = live.querySelector('.line-text')?.textContent || '';
+  if (!text || text.length < 12) return; // wait for a bit of context
+  state.inFlight = true;
+  classifyAndTag(live, role, { provisional: true })
+    .finally(() => {
+      state.inFlight = false;
+      state.last = Date.now();
+    });
 }
 
 function getOrCreateLiveLine(role) {
   if (!transcriptEl) return null;
-  let live = transcriptEl.querySelector(`.${role}[data-live="1"]`);
+  let live = transcriptEl.querySelector(`.line.${role}.live`);
   if (!live) {
-    live = makeLine(role, '', true);
+    live = createTranscriptLine(role, '', true);
     transcriptEl.appendChild(live);
   }
   return live;
@@ -62,12 +130,15 @@ function getOrCreateLiveLine(role) {
 
 function finalizeLiveLine(role, finalTextIfAny) {
   if (!transcriptEl) return;
-  const live = transcriptEl.querySelector(`.${role}[data-live="1"]`);
+  const live = transcriptEl.querySelector(`.line.${role}.live`);
   if (live) {
+    const body = live.querySelector('.line-text');
     if (typeof finalTextIfAny === 'string' && finalTextIfAny.length) {
-      live.textContent = finalTextIfAny;
+      body.textContent = finalTextIfAny;
     }
-    delete live.dataset.live;
+    live.classList.remove('live');
+    // classify finalized message (non-provisional)
+    classifyAndTag(live, role, { provisional: false });
   }
   // Clear buffer and timeout for this role
   transcriptBuffer[role] = '';
@@ -89,26 +160,32 @@ function updateTranscriptWithDebounce(role, text, isFinal = false) {
   } else {
     // Accumulate text in buffer
     transcriptBuffer[role] += text;
-    
+
     // Clear existing timeout
     if (transcriptTimeouts[role]) {
       clearTimeout(transcriptTimeouts[role]);
     }
-    
+
     // Set new timeout to update UI after 1 second of no new updates
     transcriptTimeouts[role] = setTimeout(() => {
       const live = getOrCreateLiveLine(role);
       if (live && transcriptBuffer[role]) {
-        live.textContent = transcriptBuffer[role];
+        const body = live.querySelector('.line-text');
+        body.textContent = transcriptBuffer[role];
       }
+      // Attempt a provisional classification on debounce
+      classifyLive(role);
       transcriptTimeouts[role] = null;
     }, 1000);
-    
+
     // Also update immediately for better UX
     const live = getOrCreateLiveLine(role);
     if (live) {
-      live.textContent = transcriptBuffer[role];
+      const body = live.querySelector('.line-text');
+      body.textContent = transcriptBuffer[role];
     }
+    // Opportunistic provisional classification with throttling
+    classifyLive(role);
   }
 }
 
@@ -315,7 +392,10 @@ async function stop() {
     clearTimeout(transcriptTimeouts.user);
     if (transcriptBuffer.user) {
       const live = getOrCreateLiveLine('user');
-      if (live) live.textContent = transcriptBuffer.user;
+      if (live) {
+        const body = live.querySelector('.line-text');
+        body.textContent = transcriptBuffer.user;
+      }
       finalizeLiveLine('user', transcriptBuffer.user);
     }
   }
@@ -323,7 +403,10 @@ async function stop() {
     clearTimeout(transcriptTimeouts.assistant);
     if (transcriptBuffer.assistant) {
       const live = getOrCreateLiveLine('assistant');
-      if (live) live.textContent = transcriptBuffer.assistant;
+      if (live) {
+        const body = live.querySelector('.line-text');
+        body.textContent = transcriptBuffer.assistant;
+      }
       finalizeLiveLine('assistant', transcriptBuffer.assistant);
     }
   }
